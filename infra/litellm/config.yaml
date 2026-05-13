@@ -1,0 +1,15 @@
+model_list:
+  - model_name: mmt-fast-lite
+    litellm_params:
+      model: openrouter/google/gemini-2.5-flash-lite
+      api_key: os.environ/OPENROUTER_API_KEY
+      temperature: 0
+      max_tokens: 80
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+
+litellm_settings:
+  request_timeout: 12
+  drop_params: true
+  json_logs: true

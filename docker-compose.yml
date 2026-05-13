@@ -1,0 +1,71 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    depends_on:
+      - postgres
+      - redis
+      - searxng
+      - litellm
+    env_file:
+      - .env
+    environment:
+      SEARXNG_BASE_URL: http://searxng:8080
+      LITELLM_BASE_URL: http://litellm:4000
+    ports:
+      - "4000:4000"
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    env_file:
+      - .env
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_API_KEY:-dev_litellm_master_key}
+    ports:
+      - "4001:4000"
+    volumes:
+      - ./infra/litellm/config.yaml:/app/config.yaml:ro
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: mmt
+      POSTGRES_PASSWORD: mmt
+      POSTGRES_DB: mmt
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mmt -d mmt"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  searxng:
+    image: searxng/searxng:latest
+    ports:
+      - "8080:8080"
+    environment:
+      BASE_URL: http://localhost:8080/
+      INSTANCE_NAME: mmt-local-search
+    volumes:
+      - ./infra/searxng/settings.yml:/etc/searxng/settings.yml:ro
+
+volumes:
+  postgres_data:
+  redis_data:
