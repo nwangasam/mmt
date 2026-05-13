@@ -13,6 +13,8 @@ services:
     environment:
       SEARXNG_BASE_URL: http://searxng:8080
       LITELLM_BASE_URL: http://litellm:4000
+      DATABASE_URL: postgresql://mmt:mmt@postgres:5432/mmt
+      REDIS_URL: redis://redis:6379
     ports:
       - "4000:4000"
 
@@ -23,6 +25,7 @@ services:
       - .env
     environment:
       LITELLM_MASTER_KEY: ${LITELLM_API_KEY:-dev_litellm_master_key}
+      DATABASE_URL: postgresql://mmt:mmt@postgres:5432/mmt
     ports:
       - "4001:4000"
     volumes:
