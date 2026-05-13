@@ -1,0 +1,140 @@
+@apiBaseUrl = http://127.0.0.1:4000
+@litellmBaseUrl = http://127.0.0.1:4001
+@searxngBaseUrl = http://127.0.0.1:8080
+@mmtApiKey = dev_mmt_key
+@litellmApiKey = dev_litellm_master_key
+@litellmModel = mmt-fast-lite
+
+### Health: MMT API
+GET {{apiBaseUrl}}/health
+
+### Swagger UI: MMT API
+GET {{apiBaseUrl}}/docs
+
+### Swagger JSON: MMT API
+GET {{apiBaseUrl}}/docs-json
+
+### Search: SearXNG JSON smoke test
+GET {{searxngBaseUrl}}/search?q=%22Who%20released%20Thriller%22%20%22Michael%20Jackson%22%20%22Prince%22%20music&format=json
+Accept: application/json
+
+### LiteLLM: model list
+GET {{litellmBaseUrl}}/v1/models
+Authorization: Bearer {{litellmApiKey}}
+
+### LiteLLM: direct chat completion smoke test
+# Requires OPENROUTER_API_KEY in .env and the litellm service running.
+POST {{litellmBaseUrl}}/v1/chat/completions
+Authorization: Bearer {{litellmApiKey}}
+Content-Type: application/json
+
+{
+  "model": "{{litellmModel}}",
+  "temperature": 0,
+  "max_tokens": 20,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Return JSON only: {\"answer\":\"A\"}. Do not include anything else."
+    }
+  ]
+}
+
+### MMT Trivia: native A/B answer endpoint
+# Requires OPENROUTER_API_KEY in .env for the LiteLLM-backed model call.
+POST {{apiBaseUrl}}/v1/trivia/answer
+Authorization: Bearer {{mmtApiKey}}
+Content-Type: application/json
+
+{
+  "question": "Who released Thriller?",
+  "options": {
+    "A": "Michael Jackson",
+    "B": "Prince"
+  }
+}
+
+### MMT Trivia: native endpoint with x-api-key auth
+POST {{apiBaseUrl}}/v1/trivia/answer
+x-api-key: {{mmtApiKey}}
+Content-Type: application/json
+
+{
+  "question": "Which artist released Purple Rain?",
+  "options": {
+    "A": "Prince",
+    "B": "Michael Jackson"
+  }
+}
+
+### MMT Trivia: same question again, should use final-answer cache when Redis is running
+POST {{apiBaseUrl}}/v1/trivia/answer
+Authorization: Bearer {{mmtApiKey}}
+Content-Type: application/json
+
+{
+  "question": "Who released Thriller?",
+  "options": {
+    "A": "Michael Jackson",
+    "B": "Prince"
+  }
+}
+
+### MMT OpenAI-Compatible: chat completions
+POST {{apiBaseUrl}}/v1/chat/completions
+Authorization: Bearer {{mmtApiKey}}
+Content-Type: application/json
+
+{
+  "model": "mmt-music-trivia",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Question: Who released Thriller?\nA: Michael Jackson\nB: Prince"
+    }
+  ],
+  "temperature": 0
+}
+
+### MMT OpenAI-Compatible: another question
+POST {{apiBaseUrl}}/v1/chat/completions
+Authorization: Bearer {{mmtApiKey}}
+Content-Type: application/json
+
+{
+  "model": "mmt-music-trivia",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Question: Which artist is known as the Queen of Pop?\nA: Madonna\nB: Celine Dion"
+    }
+  ],
+  "temperature": 0
+}
+
+### MMT Auth: missing key should return 401
+POST {{apiBaseUrl}}/v1/trivia/answer
+Content-Type: application/json
+
+{
+  "question": "Who released Thriller?",
+  "options": {
+    "A": "Michael Jackson",
+    "B": "Prince"
+  }
+}
+
+### MMT Validation: invalid prompt shape should return 400
+POST {{apiBaseUrl}}/v1/chat/completions
+Authorization: Bearer {{mmtApiKey}}
+Content-Type: application/json
+
+{
+  "model": "mmt-music-trivia",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Who released Thriller? Michael Jackson or Prince?"
+    }
+  ]
+}
